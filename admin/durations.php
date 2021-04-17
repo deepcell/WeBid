@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,61 +15,53 @@
 define('InAdmin', 1);
 $current_page = 'settings';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
 
-unset($ERR);
+if (isset($_POST['action']) && $_POST['action'] == 'update') {
+    // update durations table
+    $rebuilt_durations = array();
+    $rebuilt_days = array();
 
-if (isset($_POST['action']) && $_POST['action'] == 'update')
-{
-	// update durations table
-	$rebuilt_durations = array();
-	$rebuilt_days = array();
+    foreach ($_POST['new_durations'] as $k => $v) {
+        if ((isset($_POST['delete']) && !in_array($k, $_POST['delete']) || !isset($_POST['delete'])) && !empty($_POST['new_durations'][$k]) && !empty($_POST['new_days'][$k])) {
+            $rebuilt_durations[] = $_POST['new_durations'][$k];
+            $rebuilt_days[] = $_POST['new_days'][$k];
+        }
+    }
 
-	foreach ($_POST['new_durations'] as $k => $v)
-	{
-		if ((isset($_POST['delete']) && !in_array($k, $_POST['delete']) || !isset($_POST['delete'])) && !empty($_POST['new_durations'][$k]) && !empty($_POST['new_days'][$k]))
-		{
-			$rebuilt_durations[] = $_POST['new_durations'][$k];
-			$rebuilt_days[] = $_POST['new_days'][$k];
-		}
-	}
+    $query = "DELETE FROM " . $DBPrefix . "durations";
+    $db->direct_query($query);
 
-	$query = "DELETE FROM " . $DBPrefix . "durations";
-	$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
+    for ($i = 0; $i < count($rebuilt_durations); $i++) {
+        $query = "INSERT INTO " . $DBPrefix . "durations VALUES (:day_count, :day_string)";
+        $params = array();
+        $params[] = array(':day_count', $rebuilt_days[$i], 'int');
+        $params[] = array(':day_string', $rebuilt_durations[$i], 'str');
+        $db->query($query, $params);
+    }
 
-	for ($i = 0; $i < count($rebuilt_durations); $i++)
-	{
-		$query = "INSERT INTO " . $DBPrefix . "durations VALUES (" . $rebuilt_days[$i] . ", '" . $system->cleanvars($rebuilt_durations[$i]) . "')";
-		$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
-	}
-
-	$ERR = $MSG['123'];
+    $template->assign_block_vars('alerts', array('TYPE' => 'success', 'MESSAGE' => $MSG['duration_table_updated']));
 }
 
 $query = "SELECT * FROM " . $DBPrefix . "durations ORDER BY days";
-$res = mysql_query($query);
-$system->check_mysql($res, $query, __LINE__, __FILE__);
+$db->direct_query($query);
 
-$i = 0;
-while ($row = mysql_fetch_assoc($res))
-{
-	$template->assign_block_vars('dur', array(
-			'ID' => $i,
-			'DAYS' => $row['days'],
-			'DESC' => $row['description']
-			));
-	$i++;
+while ($row = $db->fetch()) {
+    $template->assign_block_vars('dur', array(
+            'DAYS' => $row['days'],
+            'DESC' => $row['description']
+            ));
 }
 
 $template->assign_vars(array(
-		'SITEURL' => $system->SETTINGS['siteurl'],
-		'ERROR' => (isset($ERR)) ? $ERR : ''
-		));
+        'SITEURL' => $system->SETTINGS['siteurl']
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'durations.tpl'
-		));
+        'body' => 'durations.tpl'
+        ));
 $template->display('body');
 
-?>
+include 'footer.php';

@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,39 +15,29 @@
 define('InAdmin', 1);
 $current_page = 'settings';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
 
-unset($ERR);
+if (isset($_POST['action']) && $_POST['action'] == 'update') {
+    // clean submission and update database
+    $system->writesetting("descriptiontag", $system->cleanvars($_POST['descriptiontag']), "str");
+    $system->writesetting("keywordstag", $system->cleanvars($_POST['keywordstag']), "str");
 
-if (isset($_POST['action']) && $_POST['action'] == 'update')
-{
-	// clean submission
-	$system->SETTINGS['descriptiontag'] = $system->cleanvars($_POST['descriptiontag']);
-	$system->SETTINGS['keywordstag'] = $system->cleanvars($_POST['keywordstag']);
-	// Update database
-	$query = "UPDATE " . $DBPrefix . "settings SET
-			 descriptiontag = :descriptiontag,
-			 keywordstag = :keywordstag";
-	$params = array();
-	$params[] = array(':descriptiontag', $system->SETTINGS['descriptiontag'], 'str');
-	$params[] = array(':keywordstag', $system->SETTINGS['keywordstag'], 'str');
-	$db->query($query, $params);
-	$ERR = $MSG['25_0185'];
+    $template->assign_block_vars('alerts', array('TYPE' => 'success', 'MESSAGE' => $MSG['metatag_settings_updated']));
 }
 
-loadblock($MSG['25_0180'], $MSG['25_0182'], 'textarea', 'descriptiontag', $system->SETTINGS['descriptiontag']);
-loadblock($MSG['25_0181'], $MSG['25_0184'], 'textarea', 'keywordstag', $system->SETTINGS['keywordstag']);
+loadblock($MSG['metatag_desc'], $MSG['metatag_desc_explain'], 'textarea', 'descriptiontag', $system->SETTINGS['descriptiontag']);
+loadblock($MSG['metatag_keywords'], $MSG['metatag_keywords_explain'], 'textarea', 'keywordstag', $system->SETTINGS['keywordstag']);
 
 $template->assign_vars(array(
-		'ERROR' => (isset($ERR)) ? $ERR : '',
-		'SITEURL' => $system->SETTINGS['siteurl'],
-		'TYPENAME' => $MSG['25_0008'],
-		'PAGENAME' => $MSG['25_0178']
-		));
+        'SITEURL' => $system->SETTINGS['siteurl'],
+        'TYPENAME' => $MSG['25_0008'],
+        'PAGENAME' => $MSG['metatag_settings']
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'adminpages.tpl'
-		));
+        'body' => 'adminpages.tpl'
+        ));
 $template->display('body');
-?>
+include 'footer.php';

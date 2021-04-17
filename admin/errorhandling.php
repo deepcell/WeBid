@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,42 +15,34 @@
 define('InAdmin', 1);
 $current_page = 'settings';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
-include $main_path . 'ckeditor/ckeditor.php';
-include $include_path . 'htmLawed.php';
+include PACKAGE_PATH . 'ckeditor/ckeditor.php';
 
-unset($ERR);
+if (isset($_POST['action']) && $_POST['action'] == 'update') {
+    // clean submission and update database
+    $system->writesetting("errortext", $system->cleanvars($_POST['errortext'], true), "str");
 
-if (isset($_POST['action']) && $_POST['action'] == 'update')
-{
-	// clean submission
-	$system->SETTINGS['errortext'] = htmLawed($_POST['errortext'], array('safe'=>1));
-	// Update database
-	$query = "UPDATE " . $DBPrefix . "settings SET errortext = :errortext";
-	$params = array();
-	$params[] = array(':errortext', $system->SETTINGS['errortext'], 'str');
-	$db->query($query, $params);
-	$ERR = $MSG['413'];
+    $template->assign_block_vars('alerts', array('TYPE' => 'success', 'MESSAGE' => $MSG['error_settings_updated']));
 }
 
 $CKEditor = new CKEditor();
-$CKEditor->basePath = $main_path . 'ckeditor/';
+$CKEditor->basePath = $system->SETTINGS['siteurl'] . '/js/ckeditor/';
 $CKEditor->returnOutput = true;
 $CKEditor->config['width'] = 550;
 $CKEditor->config['height'] = 400;
 
-loadblock($MSG['411'], $MSG['410'], $CKEditor->editor('errortext', $system->uncleanvars($system->SETTINGS['errortext'])));
+loadblock($MSG['error_text'], $MSG['error_text_explain'], $CKEditor->editor('errortext', $system->SETTINGS['errortext']));
 
 $template->assign_vars(array(
-		'ERROR' => (isset($ERR)) ? $ERR : '',
-		'SITEURL' => $system->SETTINGS['siteurl'],
-		'TYPENAME' => $MSG['5142'],
-		'PAGENAME' => $MSG['409']
-		));
+        'SITEURL' => $system->SETTINGS['siteurl'],
+        'TYPENAME' => $MSG['5142'],
+        'PAGENAME' => $MSG['error_handling']
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'adminpages.tpl'
-		));
+        'body' => 'adminpages.tpl'
+        ));
 $template->display('body');
-?>
+include 'footer.php';

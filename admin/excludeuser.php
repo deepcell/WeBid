@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,114 +15,113 @@
 define('InAdmin', 1);
 $current_page = 'users';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
 
-if (!isset($_REQUEST['id']))
-{
-	header('location: listusers.php?PAGE=' . intval($_REQUEST['offset']));
-	exit;
+if (!isset($_REQUEST['id'])) {
+    header('location: listusers.php');
+    exit;
 }
 
-if (isset($_POST['action']) && $_POST['action'] == $MSG['030'])
-{
-	if ($_POST['mode'] == 'activate')
-	{
-		$query = "UPDATE " . $DBPrefix . "users SET suspended = 0 WHERE id = " . $_POST['id'];
-		$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
-		$query = "UPDATE " . $DBPrefix . "counters SET inactiveusers = inactiveusers - 1, users = users + 1";
-		$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
-		$query = "SELECT name, email FROM " . $DBPrefix . "users WHERE id = " . $_POST['id'];
-		$res = mysql_query($query);
-		$system->check_mysql($res, $query, __LINE__, __FILE__);
-		$USER = mysql_fetch_assoc($res);
-		include $include_path . 'email_user_approved.php';
-	}
-	else
-	{
-		$query = "UPDATE " . $DBPrefix . "users SET suspended = 1 WHERE id = " . $_POST['id'];
-		$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
-		$query = "UPDATE " . $DBPrefix . "counters SET inactiveusers = inactiveusers + 1, users = users - 1";
-		$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
-	}
+if (isset($_POST['action']) && $_POST['action'] == "Yes") {
+    $query = "SELECT name, email, suspended FROM " . $DBPrefix . "users WHERE id = :user_id";
+    $params = array();
+    $params[] = array(':user_id', $_POST['id'], 'int');
+    $db->query($query, $params);
+    $USER = $db->result();
 
-	header('location: listusers.php?PAGE=' . intval($_POST['offset']));
-	exit;
-}
-elseif (isset($_POST['action']) && $_POST['action'] == $MSG['029'])
-{
-	header('location: listusers.php?PAGE=' . intval($_POST['offset']));
-	exit;
+    if ($_POST['mode'] == 'activate') {
+        $query = "UPDATE " . $DBPrefix . "users SET suspended = 0 WHERE id = :user_id";
+        $params = array();
+        $params[] = array(':user_id', $_POST['id'], 'int');
+        $db->query($query, $params);
+        $query = "UPDATE " . $DBPrefix . "counters SET inactiveusers = inactiveusers - 1, users = users + 1";
+        $db->direct_query($query);
+
+        $was_suspended = ($USER['suspended'] == 1 ? true : false);
+
+        if (!$was_suspended) {
+            include INCLUDE_PATH . 'email/user_approved.php';
+        } else {
+            include INCLUDE_PATH . 'email/user_reactivated.php';
+        }
+    } else {
+        $query = "UPDATE " . $DBPrefix . "users SET suspended = 1 WHERE id = :user_id";
+        $params = array();
+        $params[] = array(':user_id', $_POST['id'], 'int');
+        $db->query($query, $params);
+        $query = "UPDATE " . $DBPrefix . "counters SET inactiveusers = inactiveusers + 1, users = users - 1";
+        $db->direct_query($query);
+
+        include INCLUDE_PATH . 'email/user_suspended.php';
+    }
+
+    header('location: listusers.php');
+    exit;
+} elseif (isset($_POST['action']) && $_POST['action'] == "No") {
+    header('location: listusers.php');
+    exit;
 }
 
 // load the page
-$query = "SELECT * FROM " . $DBPrefix . "users WHERE id = " . intval($_GET['id']);
-$res = mysql_query($query);
-$system->check_mysql($res, $query, __LINE__, __FILE__);
-$user_data = mysql_fetch_assoc($res);
+$query = "SELECT * FROM " . $DBPrefix . "users WHERE id = :user_id";
+$params = array();
+$params[] = array(':user_id', $_GET['id'], 'int');
+$db->query($query, $params);
+$user_data = $db->result();
 
 // create tidy DOB string
-if ($user_data['birthdate'] == 0)
-{
-	$birthdate = '';
-}
-else
-{
-	$birth_day = substr($user_data['birthdate'], 6, 2);
-	$birth_month = substr($user_data['birthdate'], 4, 2);
-	$birth_year = substr($user_data['birthdate'], 0, 4);
+if ($user_data['birthdate'] == 0) {
+    $birthdate = '';
+} else {
+    $birth_day = substr($user_data['birthdate'], 6, 2);
+    $birth_month = substr($user_data['birthdate'], 4, 2);
+    $birth_year = substr($user_data['birthdate'], 0, 4);
 
-	if ($system->SETTINGS['datesformat'] == 'USA')
-	{
-		$birthdate = $birth_month . '/' . $birth_day . '/' . $birth_year;
-	}
-	else
-	{
-		$birthdate = $birth_day . '/' . $birth_month . '/' . $birth_year;
-	}
+    if ($system->SETTINGS['datesformat'] == 'USA') {
+        $birthdate = $birth_month . '/' . $birth_day . '/' . $birth_year;
+    } else {
+        $birthdate = $birth_day . '/' . $birth_month . '/' . $birth_year;
+    }
 }
 
 $mode = 'activate';
-switch ($user_data['suspended'])
-{
-	case 0:
-		$action = $MSG['305'];
-		$question = $MSG['308'];
-		$mode = 'suspend';
-		break;
-	case 8:
-		$action = $MSG['515'];
-		$question = $MSG['815'];
-		break;
-	case 10:
-		$action = $MSG['299'];
-		$question = $MSG['418'];
-		break;
-	default:
-		$action = $MSG['306'];
-		$question = $MSG['309'];
-		break;
+switch ($user_data['suspended']) {
+    case 0:
+        $action = $MSG['suspend_user'];
+        $question = $MSG['suspend_user_confirm'];
+        $mode = 'suspend';
+        break;
+    case 10:
+    case 8:
+        $action = $MSG['activate_user'];
+        $question = $MSG['activate_user_confirm'];
+        break;
+    default:
+        $action = $MSG['reactivate_user'];
+        $question = $MSG['reactivate_user_confirm'];
+        break;
 }
 
 $template->assign_vars(array(
-		'ACTION' => $action,
-		'REALNAME' => $user_data['name'],
-		'USERNAME' => $user_data['nick'],
-		'EMAIL' => $user_data['email'],
-		'ADDRESS' => $user_data['address'],
-		'PROV' => $user_data['prov'],
-		'ZIP' => $user_data['zip'],
-		'COUNTRY' => $user_data['country'],
-		'PHONE' => $user_data['phone'],
-		'DOB' => $birthdate,
-		'QUESTION' => $question,
-		'MODE' => $mode,
-		'ID' => $_GET['id'],
-		'OFFSET' => $_GET['offset']
-		));
+        'ACTION' => $action,
+        'REALNAME' => $user_data['name'],
+        'USERNAME' => $user_data['nick'],
+        'EMAIL' => $user_data['email'],
+        'ADDRESS' => $user_data['address'],
+        'PROV' => $user_data['prov'],
+        'ZIP' => $user_data['zip'],
+        'COUNTRY' => $user_data['country'],
+        'PHONE' => $user_data['phone'],
+        'DOB' => $birthdate,
+        'QUESTION' => $question,
+        'MODE' => $mode,
+        'ID' => $_GET['id']
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'excludeuser.tpl'
-		));
+        'body' => 'excludeuser.tpl'
+        ));
 $template->display('body');
-?>
+include 'footer.php';

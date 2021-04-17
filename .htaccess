@@ -11,7 +11,11 @@ Options All -Indexes
 <Files ~ "\.(log|tpl)$">
  order allow,deny
  deny from all
-</files>
+</Files>
+
+# BLOCK BLANK USER AGENTS
+RewriteCond %{HTTP_USER_AGENT} ^-?$
+RewriteRule ^ - [F]
 
 # only images can be accessed in the uploaded folder
 RewriteEngine On

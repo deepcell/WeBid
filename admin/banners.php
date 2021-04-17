@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,33 +15,26 @@
 define('InAdmin', 1);
 $current_page = 'banners';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
 
-unset($ERR);
+if (isset($_POST['action']) && $_POST['action'] == 'update') {
+    // clean submission and update database
+    $system->writesetting("banners", $_POST['banners'], "int");
 
-if (isset($_POST['action']) && $_POST['action'] == 'update')
-{
-	// clean submission
-	$system->SETTINGS['banners'] = intval($_POST['banners']);
-	// Update database
-	$query = "UPDATE " . $DBPrefix . "settings SET banners = :banners";
-	$params = array();
-	$params[] = array(':banners', $system->SETTINGS['banners'], 'int');
-	$db->query($query, $params);
-	$ERR = $MSG['600'];
+    $template->assign_block_vars('alerts', array('TYPE' => 'success', 'MESSAGE' => $MSG['banner_settings_updated']));
 }
 
-loadblock($MSG['597'], '', 'batch', 'banners', $system->SETTINGS['banners'], array($MSG['030'], $MSG['029']));
+loadblock($MSG['activate_banner_support'], $MSG['activate_banner_support_explain'], 'batch', 'banners', $system->SETTINGS['banners'], array($MSG['yes'], $MSG['no']));
 
 $template->assign_vars(array(
-		'ERROR' => (isset($ERR)) ? $ERR : '',
-		'TYPENAME' => $MSG['25_0011'],
-		'PAGENAME' => $MSG['5205']
-		));
+        'TYPENAME' => $MSG['25_0011'],
+        'PAGENAME' => $MSG['banner_admin'] . ' : ' . $MSG['5205']
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'adminpages.tpl'
-		));
+        'body' => 'adminpages.tpl'
+        ));
 $template->display('body');
-?>
+include 'footer.php';

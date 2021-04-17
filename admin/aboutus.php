@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,47 +15,37 @@
 define('InAdmin', 1);
 $current_page = 'contents';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
-include $main_path . 'ckeditor/ckeditor.php';
+include PACKAGE_PATH . 'ckeditor/ckeditor.php';
 
-unset($ERR);
+if (isset($_POST['action']) && $_POST['action'] == 'update') {
+    // Update database
+    $system->writesetting("aboutus", ynbool($_POST['aboutus']), "str");
+    $system->writesetting("aboutustext", $system->cleanvars($_POST['aboutustext'], true), "str");
 
-if (isset($_POST['action']) && $_POST['action'] == 'update')
-{
-	// clean submission
-	$system->SETTINGS['aboutus'] = ynbool($_POST['aboutus']);
-	$system->SETTINGS['aboutustext'] = $system->cleanvars($_POST['aboutustext']);
-	// Update database
-	$query = "UPDATE ". $DBPrefix . "settings SET
-			  aboutus = :aboutus,
-			  aboutustext = :aboutustext";
-	$params = array();
-	$params[] = array(':aboutus', $system->SETTINGS['aboutus'], 'str');
-	$params[] = array(':aboutustext', $system->SETTINGS['aboutustext'], 'str');
-	$db->query($query, $params);
-	$ERR = $MSG['5079'];
+    $template->assign_block_vars('alerts', array('TYPE' => 'success', 'MESSAGE' => $MSG['about_us_updated']));
 }
 
-loadblock($MSG['5077'], $MSG['5076'], 'yesno', 'aboutus', $system->SETTINGS['aboutus'], array($MSG['030'], $MSG['029']));
+loadblock($MSG['active_about_us'], $MSG['active_about_us_explain'], 'yesno', 'aboutus', $system->SETTINGS['aboutus'], array($MSG['yes'], $MSG['no']));
 
 $CKEditor = new CKEditor();
-$CKEditor->basePath = $main_path . 'ckeditor/';
+$CKEditor->basePath = $system->SETTINGS['siteurl'] . '/js/ckeditor/';
 $CKEditor->returnOutput = true;
 $CKEditor->config['width'] = 550;
 $CKEditor->config['height'] = 400;
 
-loadblock($MSG['5078'], $MSG['5080'], $CKEditor->editor('aboutustext', $system->uncleanvars($system->SETTINGS['aboutustext'])));
+loadblock($MSG['about_us_content'], $MSG['about_us_content_explain'], $CKEditor->editor('aboutustext', $system->SETTINGS['aboutustext']));
 
 $template->assign_vars(array(
-		'ERROR' => (isset($ERR)) ? $ERR : '',
-		'SITEURL' => $system->SETTINGS['siteurl'],
-		'TYPENAME' => $MSG['25_0018'],
-		'PAGENAME' => $MSG['5074']
-		));
+        'SITEURL' => $system->SETTINGS['siteurl'],
+        'TYPENAME' => $MSG['25_0018'],
+        'PAGENAME' => $MSG['about_us_page']
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'adminpages.tpl'
-		));
+        'body' => 'adminpages.tpl'
+        ));
 $template->display('body');
-?>
+include 'footer.php';

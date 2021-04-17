@@ -7,8 +7,8 @@ http://www.webidsupport.com/
 WeBid is an opensource program and released under GPL.
 
 We request you retain the full copyright notice placed in the footer with the link to www.webidsupport.com.
-This not only gives respect to the large amount of time given freely by the developers but also helps 
-build interest, traffic and use of WeBid. If you (honestly) cannot retain the full copyright we 
+This not only gives respect to the large amount of time given freely by the developers but also helps
+build interest, traffic and use of WeBid. If you (honestly) cannot retain the full copyright we
 ask you at least leave in place the "Powered by WeBid" line, with "WeBid" linked to www.webidsupport.com.
 
 INSTALLATION
@@ -16,12 +16,10 @@ INSTALLATION
 1. Upload all the files except the docs directory
 2. CHMOD the uploaded directory to 0644
 3. CHMOD the includes/config.inc.php.new to 0777
-4. CHMOD the language/EN/countries.inc.php to 0777
-5. CHMOD the includes/membertypes.inc.php to 0777
-6. CHMOD the language/EN/categories.inc.php to 0777
-7. CHMOD the language/EN/categories_select_box.inc.php to 0777
-8. CHMOD the cache directory to 0777
-9. go to http://yoursite/webid/install/install.php and follow the steps
+4. CHMOD the language/EN/categories.inc.php to 0777
+5. CHMOD the language/EN/categories_select_box.inc.php to 0777
+6. CHMOD the cache directory to 0777
+7. go to http://yoursite/webid/install/install.php and follow the steps
 
 For a more detailed set of instructions read install.txt
 

@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -13,8 +13,9 @@
  ***************************************************************************/
 
 define('InAdmin', 1);
+$current_page = 'admin';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
 
 unset($_SESSION['WEBID_ADMIN_NUMBER'], $_SESSION['WEBID_ADMIN_PASS'], $_SESSION['WEBID_ADMIN_IN'], $_SESSION['WEBID_ADMIN_USER']);

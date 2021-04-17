@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,35 +15,27 @@
 define('InAdmin', 1);
 $current_page = 'users';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
 
-unset($ERR);
+if (isset($_POST['action']) && $_POST['action'] == 'update') {
+    // clean submission and update database
+    $system->writesetting('newsletter', $_POST['newsletter'], 'int');
 
-if (isset($_POST['action']) && $_POST['action'] == 'update')
-{
-	// clean submission
-	$system->SETTINGS['newsletter'] = intval($_POST['newsletter']);
-	// Update database
-	$query = "UPDATE " . $DBPrefix . "settings SET
-			newsletter = :newsletter";
-	$params = array();
-	$params[] = array(':newsletter', $system->SETTINGS['newsletter'], 'int');
-	$db->query($query, $params);
-	$ERR = $MSG['30_0049'];
+    $template->assign_block_vars('alerts', array('TYPE' => 'success', 'MESSAGE' => $MSG['newsletter_settings_updated']));
 }
 
-loadblock($MSG['603'], $MSG['604'], 'batch', 'newsletter', $system->SETTINGS['newsletter'], array($MSG['030'], $MSG['029']));
+loadblock($MSG['activate_newsletter'], $MSG['activate_newsletter_explain'], 'batch', 'newsletter', $system->SETTINGS['newsletter'], array($MSG['yes'], $MSG['no']));
 
 $template->assign_vars(array(
-		'ERROR' => (isset($ERR)) ? $ERR : '',
-		'SITEURL' => $system->SETTINGS['siteurl'],
-		'TYPENAME' => $MSG['25_0010'],
-		'PAGENAME' => $MSG['25_0079']
-		));
+        'SITEURL' => $system->SETTINGS['siteurl'],
+        'TYPENAME' => $MSG['25_0010'],
+        'PAGENAME' => $MSG['25_0079']
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'adminpages.tpl'
-		));
+        'body' => 'adminpages.tpl'
+        ));
 $template->display('body');
-?>
+include 'footer.php';

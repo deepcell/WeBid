@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -13,39 +13,48 @@
  ***************************************************************************/
 
 define('InAdmin', 1);
+$current_page = 'contents';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
 
-$msg = intval($_REQUEST['id']);
+if (!isset($_REQUEST['board_id']) || !isset($_REQUEST['id'])) {
+    $URL = $_SESSION['RETURN_LIST'];
+    //unset($_SESSION['RETURN_LIST']);
+    header('location: ' . $URL);
+    exit;
+}
+
+$msg_id = intval($_REQUEST['id']);
 $board_id = intval($_REQUEST['board_id']);
 
 // Insert new currency
-if (isset($_POST['action']) && $_POST['action'] == $MSG['030'])
-{
-	$query = "DELETE FROM " . $DBPrefix . "comm_messages WHERE id = " . $msg;
-	$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
-	// Update messages counter
-	$query = "UPDATE " . $DBPrefix . "community SET messages = messages - 1 WHERE id = " . $board_id;
-	$system->check_mysql(mysql_query($query), $query, __LINE__, __FILE__);
-	header('location: editmessages.php?id=' . $board_id);
-	exit;
-}
-elseif (isset($_POST['action']) && $_POST['action'] == $MSG['029'])
-{
-	header('location: editmessages.php?id=' . $board_id);
-	exit;
+if (isset($_POST['action']) && $_POST['action'] == "Yes") {
+    $query = "DELETE FROM " . $DBPrefix . "comm_messages WHERE id = :msg_id";
+    $params = array();
+    $params[] = array(':msg_id', $msg_id, 'int');
+    $db->query($query, $params);
+    // Update messages counter
+    $query = "UPDATE " . $DBPrefix . "community SET messages = messages - 1 WHERE id = :board_id";
+    $params = array();
+    $params[] = array(':board_id', $board_id, 'int');
+    $db->query($query, $params);
+    header('location: editmessages.php?id=' . $board_id);
+    exit;
+} elseif (isset($_POST['action']) && $_POST['action'] == "No") {
+    header('location: editmessages.php?id=' . $board_id);
+    exit;
 }
 
 $template->assign_vars(array(
-		'ERROR' => (isset($ERR)) ? $ERR : '',
-		'ID' => $msg,
-		'MESSAGE' => sprintf($MSG['834'], $msg),
-		'TYPE' => 1
-		));
+        'ID' => $msg_id,
+        'MESSAGE' => sprintf($MSG['confirm_msg_delete'], $msg_id),
+        'TYPE' => 1
+        ));
 
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'confirm.tpl'
-		));
+        'body' => 'confirm.tpl'
+        ));
 $template->display('body');
-?>
+include 'footer.php';

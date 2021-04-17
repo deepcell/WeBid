@@ -1,6 +1,6 @@
 <?php
 /***************************************************************************
- *   copyright				: (C) 2008 - 2014 WeBid
+ *   copyright				: (C) 2008 - 2017 WeBid
  *   site					: http://www.webidsupport.com/
  ***************************************************************************/
 
@@ -15,74 +15,68 @@
 define('InAdmin', 1);
 $current_page = 'contents';
 include '../common.php';
-include $include_path . 'functions_admin.php';
+include INCLUDE_PATH . 'functions_admin.php';
 include 'loggedin.inc.php';
-
-unset($ERR);
+include PACKAGE_PATH . 'ckeditor/ckeditor.php';
 
 // Insert new message
-if (isset($_POST['action']) && $_POST['action'] == 'update')
-{
-	if (empty($_POST['question'][$system->SETTINGS['defaultlanguage']]) || empty($_POST['answer'][$system->SETTINGS['defaultlanguage']]))
-	{
-		$system->SETTINGS = $_POST;
-		$ERR = $ERR_067;
-	}
-	else
-	{
-		$query = "INSERT INTO " . $DBPrefix . "faqs values (NULL,
-			   '" . mysql_real_escape_string($_POST['question'][$system->SETTINGS['defaultlanguage']]) . "',
-			   '" . mysql_real_escape_string($_POST['answer'][$system->SETTINGS['defaultlanguage']]) . "',
-			   " . $_POST['category'] . ")";
-		$res = mysql_query($query);
-		$system->check_mysql($res, $query, __LINE__, __FILE__);
-		$id = mysql_insert_id();
-		// Insert into translation table.
-		reset($LANGUAGES);
-		foreach ($LANGUAGES as $k => $v)
-		{
-			$query = "INSERT INTO ".$DBPrefix."faqs_translated VALUES (
-					" . $id . ",
-					'" . $k . "',
-					'" . mysql_real_escape_string($_POST['question'][$k]) . "',
-					'" . mysql_real_escape_string($_POST['answer'][$k]) . "')";
-			$res = mysql_query($query);
-			$system->check_mysql($res, $query, __LINE__, __FILE__);
-		}
-		header('location: faqs.php');
-		exit;
-	}
+if (isset($_POST['action']) && $_POST['action'] == 'update') {
+    if (empty($_POST['question'][$system->SETTINGS['defaultlanguage']]) || empty($_POST['answer'][$system->SETTINGS['defaultlanguage']])) {
+        $template->assign_block_vars('alerts', array('TYPE' => 'error', 'MESSAGE' => $ERR_067));
+    } else {
+        $query = "INSERT INTO " . $DBPrefix . "faqs values (NULL, :question, :answer, :category)";
+        $params = array();
+        $params[] = array(':question', $system->cleanvars($_POST['question'][$system->SETTINGS['defaultlanguage']]), 'str');
+        $params[] = array(':answer', $system->cleanvars($_POST['answer'][$system->SETTINGS['defaultlanguage']], true), 'str');
+        $params[] = array(':category', $_POST['category'], 'int');
+        $db->query($query, $params);
+        $id = $db->lastInsertId();
+        // Insert into translation table
+        foreach ($LANGUAGES as $lang_code) {
+            $query = "INSERT INTO " . $DBPrefix . "faqs_translated VALUES (:id, :lang, :question, :answer)";
+            $params = array();
+            $params[] = array(':id', $id, 'int');
+            $params[] = array(':lang', $lang_code, 'str');
+            $params[] = array(':question', $system->cleanvars($_POST['question'][$lang_code]), 'str');
+            $params[] = array(':answer', $system->cleanvars($_POST['answer'][$lang_code], true), 'str');
+            $db->query($query, $params);
+        }
+        header('location: faqs.php');
+        exit;
+    }
 }
 
 // Get data from the database
 $query = "SELECT * FROM " . $DBPrefix . "faqscategories";
-$res = mysql_query($query);
-$system->check_mysql($res, $query, __LINE__, __FILE__);
+$db->direct_query($query);
 
-while ($row = mysql_fetch_array($res))
-{
-	$template->assign_block_vars('cats', array(
-			'ID' => $row['id'],
-			'CATEGORY' => $row['category']
-			));
+while ($row = $db->fetch()) {
+    $template->assign_block_vars('cats', array(
+            'ID' => $row['id'],
+            'CATEGORY' => $row['category']
+            ));
 }
 
-foreach ($LANGUAGES as $k => $language)
-{
-	$template->assign_block_vars('lang', array(
-			'LANG' => $language,
-			'TITLE' => (isset($_POST['title'][$k])) ? $_POST['title'][$k] : '',
-			'CONTENT' => (isset($_POST['content'][$k])) ? $_POST['content'][$k] : ''
-			));
+$CKEditor = new CKEditor();
+$CKEditor->basePath = $system->SETTINGS['siteurl'] . '/js/ckeditor/';
+$CKEditor->returnOutput = true;
+$CKEditor->config['width'] = 550;
+$CKEditor->config['height'] = 400;
+
+foreach ($LANGUAGES as $lang_code) {
+    $template->assign_block_vars('qs', array(
+            'LANG' => $lang_code,
+            'QUESTION' => (isset($_POST['question'][$lang_code])) ? $_POST['question'][$lang_code] : ''
+            ));
+    $template->assign_block_vars('as', array(
+            'LANG' => $lang_code,
+            'ANSWER' => $CKEditor->editor('answer[' . $lang_code . ']', isset($_POST['answer'][$lang_code]) ? $_POST['answer'][$lang_code] : '')
+            ));
 }
 
-$template->assign_vars(array(
-		'ERROR' => (isset($ERR)) ? $ERR : ''
-		));
-
+include 'header.php';
 $template->set_filenames(array(
-		'body' => 'newfaq.tpl'
-		));
+        'body' => 'newfaq.tpl'
+        ));
 $template->display('body');
-
-?>
+include 'footer.php';
